@@ -15,13 +15,35 @@ melalui WebSocket, tanpa editor kode dan tanpa runtime Python di perangkat siswa
 
 ## Menjalankan (lokal)
 
+### Pertama kali (setup)
+
 ```bash
 cd live6board
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # lalu sesuaikan kata sandi
+cp .env.example .env   # lalu sesuaikan kata sandi (LIVE6BOARD_TEACHER_PASSWORD, dll.)
+```
+
+### Setelah itu (menjalankan aplikasi)
+
+Aktifkan virtualenv lalu jalankan:
+
+```bash
+cd live6board
+source .venv/bin/activate
 python -m live6board.app
 ```
+
+Atau tanpa aktivasi venv (pakai binary-nya langsung):
+
+```bash
+cd live6board
+.venv/bin/python -m live6board.app
+```
+
+Yang perlu diulang tiap kali hanya:
+1. `cd` ke folder proyek.
+2. Jalankan `python -m live6board.app`.
 
 Buka:
 
