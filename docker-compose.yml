@@ -1,0 +1,27 @@
+services:
+  live6board:
+    build: .
+    image: live6board:latest
+    container_name: live6board
+    restart: unless-stopped
+    ports:
+      - "9330:9330"
+      - "9331:9331"
+    environment:
+      LIVE6BOARD_HOST: 0.0.0.0
+      LIVE6BOARD_PORTS: "9330,9331"
+      LIVE6BOARD_TITLE: Live6Board
+      LIVE6BOARD_ROOM: main
+      LIVE6BOARD_TEACHER_PASSWORD: ${LIVE6BOARD_TEACHER_PASSWORD:-guru}
+      LIVE6BOARD_STUDENT_PASSWORD: ${LIVE6BOARD_STUDENT_PASSWORD:-}
+      LIVE6BOARD_SESSION_HOURS: "12"
+      LIVE6BOARD_MAX_UPLOAD_MB: "12"
+      LIVE6BOARD_MAX_BLOCKS: "400"
+      LIVE6BOARD_MAX_BLOCK_CHARS: "8000"
+      LIVE6BOARD_MAX_IMAGE_PX: "1920"
+      LIVE6BOARD_LOG_LEVEL: info
+    volumes:
+      - live6board-data:/app/data
+
+volumes:
+  live6board-data:

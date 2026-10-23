@@ -1,0 +1,11 @@
+{
+  auto_https off
+}
+
+:9330 {
+  reverse_proxy localhost:9330
+}
+
+:9331 {
+  reverse_proxy localhost:9331
+}
