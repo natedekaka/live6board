@@ -73,12 +73,22 @@
     </div>
 
     <main class="stage" id="stage">
-      <div class="board-shell">
-        <p class="empty-state" id="empty-state">
-          <strong id="empty-title">Papan masih kosong</strong>
-          <span id="empty-hint">Tunggu pengajar menulis materi.</span>
-        </p>
-        <section class="board" id="board" aria-label="Isi papan"></section>
+      <div class="kelas-layout">
+        <div class="kolom-utama">
+          <div class="board-shell">
+            <p class="empty-state" id="empty-state">
+              <strong id="empty-title">Papan masih kosong</strong>
+              <span id="empty-hint">Tunggu pengajar menulis materi.</span>
+            </p>
+            <section class="board" id="board" aria-label="Isi papan"></section>
+          </div>
+        </div>
+        <aside id="pane-peserta" class="pane-peserta" hidden>
+          <div class="pane-head">
+            Peserta <span id="pane-count"></span>
+          </div>
+          <div id="daftar-peserta" class="list-peserta"></div>
+        </aside>
       </div>
     </main>
 

@@ -1,0 +1,21 @@
+# Salin ke .env lalu sesuaikan.
+LIVE6BOARD_TITLE=Live6Board
+LIVE6BOARD_ROOM=main
+
+# WAJIB diganti sebelum dipakai di kelas.
+LIVE6BOARD_TEACHER_PASSWORD=guru
+
+# Kosongkan bila siswa boleh masuk tanpa kata sandi.
+LIVE6BOARD_STUDENT_PASSWORD=siswa
+
+# Dua port (dipisah koma) untuk akses LAN.
+LIVE6BOARD_PORTS=9330,9331
+LIVE6BOARD_HOST=0.0.0.0
+
+# Opsional: isi agar sesi login tidak batal saat server restart.
+# LIVE6BOARD_SECRET=ganti-dengan-string-acak-panjang
+
+# Opsional
+# LIVE6BOARD_MAX_UPLOAD_MB=12
+# LIVE6BOARD_SESSION_HOURS=12
+# LIVE6BOARD_LOG_LEVEL=info

@@ -1404,3 +1404,112 @@ body[data-role="teacher"] .jump-wrap {
   font-size: 0.78rem;
   margin: 0;
 }
+
+/* ------------------------------------------------------------------ peserta side panel */
+.kelas-layout {
+  display: flex;
+  gap: clamp(12px, 2vw, 24px);
+  align-items: flex-start;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: clamp(12px, 2vw, 24px);
+}
+
+.kolom-utama {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.pane-peserta {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  max-height: calc(100vh - 120px);
+  position: sticky;
+  top: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.pane-peserta[hidden] {
+  display: none;
+}
+
+.pane-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pane-head span {
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.list-peserta {
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row-peserta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.row-peserta:hover {
+  background: var(--surface-soft);
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.row-nama {
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-nama.kosong {
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .kelas-layout {
+    flex-direction: column;
+  }
+  .pane-peserta {
+    width: 100%;
+    max-height: 220px;
+    position: static;
+  }
+}

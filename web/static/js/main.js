@@ -3,6 +3,9 @@ import { BoardView, markdownToBlocks } from "./board.js";
 import { uploadImage } from "./upload.js";
 
 const $ = (selector) => document.querySelector(selector);
+const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({
+  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+})[c]);
 
 const state = {
   me: null,
@@ -148,6 +151,33 @@ function updateParticipantsPanel() {
   if (empty) {
     empty.hidden = (state.participants?.studentNames || []).length > 0;
   }
+
+  // panel samping (ala Zoom) untuk guru
+  const paneCount = $("#pane-count");
+  const daftar = $("#daftar-peserta");
+  const names = state.participants?.studentNames || [];
+  if (paneCount) paneCount.textContent = `(${names.length})`;
+  if (daftar) {
+    daftar.innerHTML = "";
+    const teacherName = state.participants?.teacherName || "Guru";
+    const teacherRow = document.createElement("div");
+    teacherRow.className = "row-peserta";
+    teacherRow.innerHTML = `<span class="avatar">${esc(teacherName.charAt(0).toUpperCase())}</span><span class="row-nama">${esc(teacherName)}</span>`;
+    daftar.appendChild(teacherRow);
+    if (names.length === 0) {
+      const emptyRow = document.createElement("span");
+      emptyRow.className = "row-nama kosong";
+      emptyRow.textContent = "Belum ada siswa";
+      daftar.appendChild(emptyRow);
+    } else {
+      for (const name of names) {
+        const row = document.createElement("div");
+        row.className = "row-peserta";
+        row.innerHTML = `<span class="avatar">${esc(name.charAt(0).toUpperCase())}</span><span class="row-nama">${esc(name)}</span>`;
+        daftar.appendChild(row);
+      }
+    }
+  }
 }
 
 function bindParticipants() {
@@ -221,6 +251,8 @@ function applyRoleUI(role) {
   if (topbar) topbar.hidden = !role;
   const teacherBar = $("#teacher-bar");
   if (teacherBar) teacherBar.hidden = !isTeacher;
+  const pane = $("#pane-peserta");
+  if (pane) pane.hidden = !isTeacher;
   const logoutBtn = $("#logout-btn");
   if (logoutBtn) logoutBtn.hidden = !role;
   const followBtn = $("#follow-btn");
