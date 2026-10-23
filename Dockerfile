@@ -11,6 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 9330 9331
+EXPOSE 9332
 
-CMD ["sh", "-c", "uvicorn live6board.app:create_app --host 0.0.0.0 --port ${LIVE6BOARD_PORT:-9330}"]
+CMD ["python", "-m", "live6board.app"]

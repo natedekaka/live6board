@@ -5,11 +5,10 @@ services:
     container_name: live6board
     restart: unless-stopped
     ports:
-      - "9330:9330"
-      - "9331:9331"
+      - "9332:9332"
     environment:
       LIVE6BOARD_HOST: 0.0.0.0
-      LIVE6BOARD_PORTS: "9330,9331"
+      LIVE6BOARD_PORTS: "9332"
       LIVE6BOARD_TITLE: Live6Board
       LIVE6BOARD_ROOM: main
       LIVE6BOARD_TEACHER_PASSWORD: ${LIVE6BOARD_TEACHER_PASSWORD:-guru}
