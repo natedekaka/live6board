@@ -1346,3 +1346,61 @@ body[data-role="teacher"] .jump-wrap {
   justify-content: center;
   flex-wrap: wrap;
 }
+
+/* ------------------------------------------------------------------ peserta */
+.participants-popover {
+  position: fixed;
+  top: calc(var(--topbar-h) + 8px);
+  right: 12px;
+  z-index: 46;
+  max-width: min(320px, calc(100vw - 24px));
+}
+
+.participants-popover[hidden] {
+  display: none;
+}
+
+.participants-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.participants-card strong {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.participant-teacher {
+  font-size: 0.82rem;
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.participant-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.participant-list li {
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.participant-empty {
+  font-size: 0.78rem;
+  margin: 0;
+}

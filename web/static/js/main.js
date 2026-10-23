@@ -10,6 +10,7 @@ const state = {
   room: null,
   blocks: [],
   settings: { follow: true },
+  participants: { teacherName: "", studentNames: [] },
   version: 0,
   connected: false,
   lastScroll: null,
@@ -105,13 +106,63 @@ function renderPresence(payload) {
   if (!badge) return;
   const teachers = payload.teachers || 0;
   const students = payload.students || 0;
+  state.participants = {
+    teacherName: payload.teacherName || "",
+    studentNames: Array.isArray(payload.studentNames) ? payload.studentNames : [],
+  };
   if (teachers + students === 0) {
     badge.hidden = true;
     badge.textContent = "";
+    updateParticipantsPanel();
     return;
   }
   badge.hidden = false;
   badge.textContent = `${teachers} pengajar · ${students} siswa online`;
+  badge.title = [
+    state.participants.teacherName ? `Guru: ${state.participants.teacherName}` : "",
+    ...state.participants.studentNames.map((n) => `Siswa: ${n}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  updateParticipantsPanel();
+}
+
+function updateParticipantsPanel() {
+  const teacherEl = $("#participants-teacher");
+  const list = $("#participants-list");
+  const empty = $("#participants-empty");
+  if (teacherEl) {
+    teacherEl.textContent = state.participants?.teacherName
+      ? `Guru: ${state.participants.teacherName}`
+      : "";
+    teacherEl.hidden = !state.participants?.teacherName;
+  }
+  if (list) {
+    list.innerHTML = "";
+    for (const name of state.participants?.studentNames || []) {
+      const li = document.createElement("li");
+      li.textContent = name;
+      list.appendChild(li);
+    }
+  }
+  if (empty) {
+    empty.hidden = (state.participants?.studentNames || []).length > 0;
+  }
+}
+
+function bindParticipants() {
+  const badge = $("#presence");
+  const popover = $("#participants-popover");
+  if (!badge || !popover) return;
+  badge.style.cursor = "pointer";
+  badge.addEventListener("click", () => {
+    popover.hidden = !popover.hidden;
+  });
+  document.addEventListener("click", (event) => {
+    if (popover.hidden) return;
+    if (popover.contains(event.target) || badge.contains(event.target)) return;
+    popover.hidden = true;
+  });
 }
 
 // --------------------------------------------------------------------- auth
@@ -618,6 +669,7 @@ async function init() {
   bindTeacherBar();
   bindFileInput();
   bindBoardEvents();
+  bindParticipants();
 
   const dialog = $("#login-dialog");
   const logoutButton = $("#logout-btn");

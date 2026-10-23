@@ -131,12 +131,22 @@ class Hub:
     def presence(self, room: str) -> dict:
         clients = self.clients.get(room, {}).values()
         teachers = students = 0
+        teacher_name = ""
+        student_names: list[str] = []
         for client in clients:
             if client.role == "teacher":
                 teachers += 1
+                if not teacher_name:
+                    teacher_name = client.name or "Guru"
             else:
                 students += 1
-        return {"teachers": teachers, "students": students}
+                student_names.append(client.name or "Siswa")
+        return {
+            "teachers": teachers,
+            "students": students,
+            "teacherName": teacher_name,
+            "studentNames": student_names,
+        }
 
     async def connect(self, room_name: str, ws: Any, role: str, name: str = "") -> Client:
         room = await self.get_room(room_name)
@@ -162,6 +172,8 @@ class Hub:
             "type": "presence",
             "teachers": presence["teachers"],
             "students": presence["students"],
+            "teacherName": presence["teacherName"],
+            "studentNames": presence["studentNames"],
         }
 
     async def broadcast(
