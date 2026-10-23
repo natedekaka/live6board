@@ -1291,3 +1291,58 @@ body[data-role="teacher"] .jump-wrap {
     box-shadow: none;
   }
 }
+
+/* ------------------------------------------------------------------ ruang kelas */
+.role-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 12px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.role-tab {
+  flex: 1 1 0;
+  min-height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.role-tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.login-panel[hidden] {
+  display: none;
+}
+
+.room-code {
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 14px 16px;
+  margin: 8px 0 12px;
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--accent-strong);
+  user-select: all;
+}
+
+.room-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}

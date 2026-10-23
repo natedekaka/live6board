@@ -9,7 +9,7 @@ melalui WebSocket, tanpa editor kode dan tanpa runtime Python di perangkat siswa
 - **Gambar**: unggah / tempel / lepas-drag dari file, otomatis dikompresi ke WebP.
 - **Live**: perubahan dari pengajar diteruskan ke semua perangkat dalam ruang yang sama.
 - **Akses LAN**: dua port untuk klien dan pengajar (`9330` dan `9331`).
-- **Login**: kata sandi via environment variable (pengajar & siswa).
+- **Login**: pengajar membuat ruang dengan kode guru; siswa bergabung dengan kode ruang + nama.
 - **Mode baca**: siswa hanya dapat melihat; pengajar yang dapat menulis/mengunggah.
 - **Tema**: terang / gelap, disimpan di perangkat.
 
@@ -20,13 +20,16 @@ cd live6board
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # lalu sesuaikan kata sandi
-uvicorn live6board.app:create_app --host 0.0.0.0 --port 9330
+python -m live6board.app
 ```
 
 Buka:
 
-- Pengajar: http://<IP-LAN>:9330
-- Siswa:   http://<IP-LAN>:9331
+- Pengajar & Siswa: http://<IP-LAN>:9330  (atau port lain sesuai LIVE6BOARD_PORTS)
+
+Alur:
+- Guru: klik "Saya Guru" → masukkan kode guru → bagikan kode ruang ke siswa → "Masuk ke ruang".
+- Siswa: klik "Saya Siswa" → masukkan kode ruang + nama → "Gabung".
 
 ## Variabel environment
 

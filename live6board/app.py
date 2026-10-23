@@ -7,6 +7,7 @@ WebSocket untuk sinkronisasi blok dan gulir secara real-time.
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import logging
 import socket
@@ -54,6 +55,15 @@ MAX_WS_MESSAGE = 300_000
 
 class LoginPayload(BaseModel):
     password: str = Field(default="", max_length=200)
+
+
+class CreateRoomPayload(BaseModel):
+    kode_guru: str = Field(default="", max_length=200)
+
+
+class JoinRoomPayload(BaseModel):
+    kode: str = Field(default="", max_length=64)
+    nama: str = Field(default="", max_length=40)
 
 
 def _origin_ok(headers) -> bool:
@@ -160,15 +170,20 @@ def create_app(config: Config | None = None) -> FastAPI:
         return response
 
     # ------------------------------------------------------------------ auth
+    def _session_name(request: Request) -> str:
+        token = request.cookies.get(COOKIE_NAME, "")
+        payload = read_session(config.secret, token)
+        if not payload:
+            return ""
+        return str(payload.get("n") or "")
+
     @app.get("/api/me")
     async def me(request: Request) -> dict:
         role = _session_role(request, config)
         return {
             "role": role,
-            "room": config.room,
+            "name": _session_name(request),
             "title": config.title,
-            "requiresPassword": bool(config.student_password),
-            "teacherPasswordSet": True,
             "maxUploadBytes": config.max_upload,
         }
 
@@ -203,6 +218,49 @@ def create_app(config: Config | None = None) -> FastAPI:
         )
         log.info("Login %s dari %s", role, ip)
         return {"role": role, "room": config.room, "title": config.title}
+
+    @app.post("/api/ruang")
+    async def create_room(payload: CreateRoomPayload, request: Request, response: Response) -> dict:
+        ip = request.client.host if request.client else "unknown"
+        if not throttle.allowed(ip):
+            raise HTTPException(status_code=429, detail="Terlalu banyak percobaan.")
+        if not hmac.compare_digest(payload.kode_guru.strip(), config.teacher_password):
+            throttle.hit(ip)
+            raise HTTPException(status_code=403, detail="Kode guru salah.")
+        throttle.reset(ip)
+        code = await hub.create_room()
+        token = issue_session(config.secret, "teacher", config.session_ttl, name="Guru")
+        response.set_cookie(
+            COOKIE_NAME,
+            token,
+            max_age=config.session_ttl,
+            httponly=True,
+            samesite="lax",
+            secure=_is_https(request),
+            path="/",
+        )
+        log.info("Ruang %s dibuat dari %s", code, ip)
+        return {"kode": code}
+
+    @app.post("/api/gabung")
+    async def join_room(payload: JoinRoomPayload, request: Request, response: Response) -> dict:
+        ip = request.client.host if request.client else "unknown"
+        kode = payload.kode.strip().lower()
+        if not ROOM_RE.match(kode) or not await storage.room_exists(kode):
+            raise HTTPException(status_code=404, detail="Kode ruang tidak ditemukan.")
+        name = (payload.nama or "Siswa").strip()[:30] or "Siswa"
+        token = issue_session(config.secret, "student", config.session_ttl, name=name)
+        response.set_cookie(
+            COOKIE_NAME,
+            token,
+            max_age=config.session_ttl,
+            httponly=True,
+            samesite="lax",
+            secure=_is_https(request),
+            path="/",
+        )
+        log.info("Siswa %r bergabung ke %s dari %s", name, kode, ip)
+        return {"ok": True, "kode": kode}
 
     @app.post("/api/logout")
     async def logout(response: Response) -> dict:
@@ -283,12 +341,13 @@ def create_app(config: Config | None = None) -> FastAPI:
         if role is None:
             await websocket.close(code=4401)
             return
-        if room != config.room:
+        if room not in hub.rooms and not await storage.room_exists(room):
             await websocket.close(code=4404)
             return
 
         await websocket.accept()
-        client = await hub.connect(room, websocket, role)
+        name = _session_name(websocket)  # type: ignore[arg-type]
+        client = await hub.connect(room, websocket, role, name=name)
         try:
             while True:
                 raw = await websocket.receive_text()

@@ -38,6 +38,7 @@ class Client:
     ws: Any
     role: str
     id: str
+    name: str = ""
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     async def send(self, payload: dict) -> None:
@@ -111,6 +112,21 @@ class Hub:
             log.info("Ruang %r dimuat (%d blok)", name, len(blocks))
             return room
 
+    async def create_room(self) -> str:
+        """Buat ruang baru dengan kode acak dan simpan ke storage."""
+        alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+        while True:
+            code = "".join(secrets.choice(alphabet) for _ in range(6))
+            if code in self.rooms:
+                continue
+            if await self.storage.room_exists(code):
+                continue
+            room = Room(code, [], {}, self.config)
+            self.rooms[code] = room
+            await self.storage.save_room(code, [], {})
+            log.info("Ruang baru dibuat: %r", code)
+            return code
+
     # --------------------------------------------------------------- koneksi
     def presence(self, room: str) -> dict:
         clients = self.clients.get(room, {}).values()
@@ -122,9 +138,9 @@ class Hub:
                 students += 1
         return {"teachers": teachers, "students": students}
 
-    async def connect(self, room_name: str, ws: Any, role: str) -> Client:
+    async def connect(self, room_name: str, ws: Any, role: str, name: str = "") -> Client:
         room = await self.get_room(room_name)
-        client = Client(ws=ws, role=role, id=secrets.token_hex(8))
+        client = Client(ws=ws, role=role, id=secrets.token_hex(8), name=name or ("Guru" if role == "teacher" else "Siswa"))
         self.clients.setdefault(room_name, {})[client.id] = client
         snapshot = room.snapshot()
         snapshot["type"] = "snapshot"

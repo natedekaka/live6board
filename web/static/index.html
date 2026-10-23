@@ -24,7 +24,7 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <div class="brand-text">
           <h1 id="board-title">Live6Board</h1>
-          <span class="room-tag" id="room-tag">#main</span>
+          <span class="room-tag" id="room-tag">#—</span>
         </div>
       </div>
 
@@ -125,51 +125,82 @@
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <dialog class="login-dialog" id="login-dialog" aria-labelledby="login-heading">
-      <form id="login-form" novalidate>
-        <div class="login-brand">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <div>
-            <h2 id="login-heading">Masuk ke papan</h2>
-            <p class="muted">
-              <span id="login-title">Live6Board</span> ·
-              <span id="login-room">#main</span>
-            </p>
+      <div class="login-brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h2 id="login-heading">Masuk ke papan</h2>
+          <p class="muted">Pilih peran Anda untuk mulai.</p>
+        </div>
+      </div>
+
+      <div class="role-tabs" role="tablist" aria-label="Pilih peran">
+        <button class="role-tab" type="button" id="teacher-tab" aria-selected="true">
+          Saya Guru
+        </button>
+        <button class="role-tab" type="button" id="student-tab" aria-selected="false">
+          Saya Siswa
+        </button>
+      </div>
+
+      <!-- Guru -->
+      <section id="teacher-panel" class="login-panel">
+        <form id="teacher-form" novalidate>
+          <label for="teacher-code">Kode guru</label>
+          <input
+            id="teacher-code"
+            name="teacher-code"
+            type="password"
+            autocomplete="current-password"
+            enterkeyhint="go"
+            placeholder="Kode rahasia pengajar"
+            required
+          />
+          <p class="form-error" id="login-error" role="alert" hidden></p>
+          <button class="btn primary wide" type="submit" id="teacher-submit">
+            Buat ruang kelas
+          </button>
+        </form>
+
+        <div id="teacher-result" hidden>
+          <p class="muted">Kode ruang kelas Anda (bagikan ke siswa):</p>
+          <div class="room-code" id="room-code-display"></div>
+          <div class="room-actions">
+            <button class="btn ghost" type="button" id="copy-code">Salin kode</button>
+            <button class="btn primary" type="button" id="enter-room">Masuk ke ruang</button>
           </div>
         </div>
+      </section>
 
-        <div class="login-roles" role="group" aria-label="Pilih jenis akun">
-          <button class="btn ghost small" type="button" id="teacher-login-btn">
-            Pengajar
+      <!-- Siswa -->
+      <section id="student-panel" class="login-panel" hidden>
+        <form id="student-form" novalidate>
+          <label for="student-room">Kode ruang</label>
+          <input
+            id="student-room"
+            name="student-room"
+            type="text"
+            autocomplete="off"
+            autocapitalize="characters"
+            enterkeyhint="go"
+            placeholder="mis. abc123"
+            required
+          />
+          <label for="student-name">Nama</label>
+          <input
+            id="student-name"
+            name="student-name"
+            type="text"
+            autocomplete="name"
+            enterkeyhint="go"
+            placeholder="Nama Anda"
+            required
+          />
+          <p class="form-error" id="student-error" role="alert" hidden></p>
+          <button class="btn primary wide" type="submit" id="student-submit">
+            Gabung
           </button>
-          <button class="btn ghost small" type="button" id="student-login-btn">
-            Siswa
-          </button>
-        </div>
-
-        <label for="password">Kata sandi</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autocomplete="current-password"
-          enterkeyhint="go"
-          placeholder="Kata sandi pengajar atau siswa"
-          required
-        />
-        <p class="form-error" id="login-error" role="alert" hidden></p>
-
-        <button class="btn primary wide" type="submit" id="login-submit">
-          Masuk
-        </button>
-
-        <p class="login-hint" id="teacher-login-hint">
-          <strong>Pengajar</strong> dapat menulis, menyunting, dan mengunggah
-          gambar. <strong>Siswa</strong> hanya dapat membaca papan.
-        </p>
-        <p class="login-hint" id="student-login-hint" hidden>
-          Masuk dengan kata sandi akun siswa untuk melihat papan yang sama.
-        </p>
-      </form>
+        </form>
+      </section>
     </dialog>
 
     <script type="module" src="/static/js/main.js"></script>

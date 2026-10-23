@@ -7,7 +7,7 @@ const $ = (selector) => document.querySelector(selector);
 const state = {
   me: null,
   role: null,
-  room: "main",
+  room: null,
   blocks: [],
   settings: { follow: true },
   version: 0,
@@ -39,11 +39,23 @@ function updateEmptyState(blocks) {
   emptyState.hidden = Array.isArray(blocks) && blocks.length > 0;
 }
 
-const socket = new LiveSocket({
-  url: `/ws/${state.room}`,
-  onStatus: (status) => setConnStatus(status),
-  onMessage: (message) => handleSocketMessage(message),
-});
+let socket = null;
+
+function connectSocket() {
+  if (socket) {
+    try {
+      socket.close();
+    } catch {
+      /* abaikan */
+    }
+  }
+  socket = new LiveSocket({
+    url: `/ws/${state.room}`,
+    onStatus: (status) => setConnStatus(status),
+    onMessage: (message) => handleSocketMessage(message),
+  });
+  socket.connect();
+}
 
 function setConnStatus(status) {
   state.connected = status === "online";
@@ -108,14 +120,13 @@ async function refreshMe() {
     const response = await fetch("/api/me");
     const me = await response.json();
     state.me = me;
-    state.room = me.room || state.room;
     return me;
   } catch {
     return null;
   }
 }
 
-async function openLogin() {
+function openLogin() {
   const dialog = $("#login-dialog");
   if (dialog && !dialog.open) {
     if (typeof dialog.showModal === "function") {
@@ -124,13 +135,7 @@ async function openLogin() {
       dialog.setAttribute("open", "");
     }
   }
-  const errorBox = $("#login-error");
-  if (errorBox) errorBox.hidden = true;
-  const password = $("#password");
-  if (password) {
-    password.value = "";
-    password.focus();
-  }
+  showLoginError("");
 }
 
 function closeLogin() {
@@ -143,41 +148,18 @@ function closeLogin() {
   }
 }
 
-async function submitLogin(event) {
-  if (event && event.preventDefault) event.preventDefault();
-  const password = $("#password");
-  const value = password ? password.value : "";
-  const errorBox = $("#login-error");
-  const submitButton = $("#login-submit");
-  if (errorBox) errorBox.hidden = true;
-  if (submitButton) submitButton.disabled = true;
-  try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: value }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (errorBox) {
-        errorBox.textContent = data.detail || "Kata sandi salah.";
-        errorBox.hidden = false;
-      }
-      return;
-    }
-    state.role = data.role;
-    await refreshMe();
-    closeLogin();
-    applyRoleUI(state.role);
-    socket.connect();
-  } catch {
-    if (errorBox) {
-      errorBox.textContent = "Tidak dapat menghubungkan ke papan.";
-      errorBox.hidden = false;
-    }
-  } finally {
-    if (submitButton) submitButton.disabled = false;
-  }
+function showLoginError(message, target = "login-error") {
+  const box = document.getElementById(target);
+  if (!box) return;
+  box.textContent = message || "";
+  box.hidden = !message;
+}
+
+function setRoomTag(code) {
+  const tag = $("#room-tag");
+  if (tag) tag.textContent = code ? `#${code}` : "#—";
+  const title = $("#board-title");
+  if (title) title.textContent = code ? `Live6Board · ${code}` : "Live6Board";
 }
 
 function applyRoleUI(role) {
@@ -189,7 +171,7 @@ function applyRoleUI(role) {
   const teacherBar = $("#teacher-bar");
   if (teacherBar) teacherBar.hidden = !isTeacher;
   const logoutBtn = $("#logout-btn");
-  if (logoutBtn) logoutBtn.hidden = !isTeacher;
+  if (logoutBtn) logoutBtn.hidden = !role;
   const followBtn = $("#follow-btn");
   if (followBtn) followBtn.hidden = !isTeacher;
   const jumpBtn = $("#jump-btn");
@@ -205,7 +187,90 @@ function applyRoleUI(role) {
       ? "Klik di sini atau gunakan bilah bawah untuk mulai menulis."
       : "Tunggu pengajar menulis materi.";
   }
+  setRoomTag(state.room);
   board.replace(board.getBlocks());
+}
+
+async function createRoom() {
+  const input = $("#teacher-code");
+  const code = input ? input.value.trim() : "";
+  showLoginError("", "login-error");
+  const submit = $("#teacher-submit");
+  if (submit) submit.disabled = true;
+  try {
+    const response = await fetch("/api/ruang", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kode_guru: code }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showLoginError(data.detail || "Kode guru salah.", "login-error");
+      return;
+    }
+    state.room = data.kode;
+    state.role = "teacher";
+    state.me = { role: "teacher" };
+    try {
+      localStorage.setItem("l6b_room", state.room);
+      localStorage.setItem("l6b_role", "teacher");
+    } catch {
+      /* abaikan */
+    }
+    const display = $("#room-code-display");
+    if (display) display.textContent = state.room;
+    const result = $("#teacher-result");
+    if (result) result.hidden = false;
+    const form = $("#teacher-form");
+    if (form) form.hidden = true;
+  } catch {
+    showLoginError("Tidak dapat menghubungkan ke papan.", "login-error");
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+async function enterRoom() {
+  if (!state.room || !state.role) return;
+  closeLogin();
+  applyRoleUI(state.role);
+  connectSocket();
+}
+
+async function joinRoom() {
+  const roomInput = $("#student-room");
+  const nameInput = $("#student-name");
+  const kode = roomInput ? roomInput.value.trim().toLowerCase() : "";
+  const nama = nameInput ? nameInput.value.trim() : "";
+  showLoginError("", "student-error");
+  const submit = $("#student-submit");
+  if (submit) submit.disabled = true;
+  try {
+    const response = await fetch("/api/gabung", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kode, nama }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showLoginError(data.detail || "Kode ruang tidak ditemukan.", "student-error");
+      return;
+    }
+    state.room = data.kode;
+    state.role = "student";
+    state.me = { role: "student" };
+    try {
+      localStorage.setItem("l6b_room", state.room);
+      localStorage.setItem("l6b_role", "student");
+    } catch {
+      /* abaikan */
+    }
+    await enterRoom();
+  } catch {
+    showLoginError("Tidak dapat menghubungkan ke papan.", "student-error");
+  } finally {
+    if (submit) submit.disabled = false;
+  }
 }
 
 async function logout() {
@@ -214,14 +279,89 @@ async function logout() {
   } catch {
     /* abaikan */
   }
-  socket.close();
+  if (socket) {
+    try {
+      socket.close();
+    } catch {
+      /* abaikan */
+    }
+  }
   state.role = null;
   state.me = null;
+  state.room = null;
   state.blocks = [];
   state.lastScroll = null;
   board.replace([]);
+  try {
+    localStorage.removeItem("l6b_room");
+    localStorage.removeItem("l6b_role");
+  } catch {
+    /* abaikan */
+  }
   applyRoleUI(null);
+  // reset dialog
+  const teacherForm = $("#teacher-form");
+  if (teacherForm) teacherForm.hidden = false;
+  const teacherResult = $("#teacher-result");
+  if (teacherResult) teacherResult.hidden = true;
+  const codeInput = $("#teacher-code");
+  if (codeInput) codeInput.value = "";
+  const roomInput = $("#student-room");
+  if (roomInput) roomInput.value = "";
+  const nameInput = $("#student-name");
+  if (nameInput) nameInput.value = "";
+  showLoginError("");
   await openLogin();
+}
+
+function setTab(mode) {
+  const teacherTab = $("#teacher-tab");
+  const studentTab = $("#student-tab");
+  const teacherPanel = $("#teacher-panel");
+  const studentPanel = $("#student-panel");
+  if (teacherTab) teacherTab.setAttribute("aria-selected", mode === "teacher" ? "true" : "false");
+  if (studentTab) studentTab.setAttribute("aria-selected", mode === "student" ? "true" : "false");
+  if (teacherPanel) teacherPanel.hidden = mode !== "teacher";
+  if (studentPanel) studentPanel.hidden = mode !== "student";
+  showLoginError("");
+}
+
+function bindLogin() {
+  const teacherTab = $("#teacher-tab");
+  const studentTab = $("#student-tab");
+  if (teacherTab) teacherTab.addEventListener("click", () => setTab("teacher"));
+  if (studentTab) studentTab.addEventListener("click", () => setTab("student"));
+
+  const teacherForm = $("#teacher-form");
+  if (teacherForm) {
+    teacherForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void createRoom();
+    });
+  }
+  const enterRoomBtn = $("#enter-room");
+  if (enterRoomBtn) {
+    enterRoomBtn.addEventListener("click", () => void enterRoom());
+  }
+  const copyBtn = $("#copy-code");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(state.room || "");
+        toast("Kode ruang disalin.", "info");
+      } catch {
+        toast("Gagal menyalin kode.", "error");
+      }
+    });
+  }
+
+  const studentForm = $("#student-form");
+  if (studentForm) {
+    studentForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void joinRoom();
+    });
+  }
 }
 
 // ---------------------------------------------------------------------- toast
@@ -257,47 +397,11 @@ function initTheme() {
   }
 }
 
-// -------------------------------------------------------------------- login UI
-function setLoginHint(mode) {
-  const teacherHint = document.getElementById("teacher-login-hint");
-  const studentHint = document.getElementById("student-login-hint");
-  if (teacherHint) teacherHint.hidden = mode !== "teacher";
-  if (studentHint) studentHint.hidden = mode !== "student";
-  const errorBox = $("#login-error");
-  if (errorBox) errorBox.hidden = true;
-}
-
-function bindLogin() {
-  const form = $("#login-form");
-  const password = $("#password");
-  const teacherButton = $("#teacher-login-btn");
-  const studentButton = $("#student-login-btn");
-  const errorBox = $("#login-error");
-
-  if (form) {
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      void submitLogin(event);
-    });
-  }
-  if (teacherButton) {
-    teacherButton.addEventListener("click", () => setLoginHint("teacher"));
-  }
-  if (studentButton) {
-    studentButton.addEventListener("click", () => setLoginHint("student"));
-  }
-  if (password) {
-    password.addEventListener("input", () => {
-      if (errorBox) errorBox.hidden = true;
-    });
-  }
-}
-
 // ----------------------------------------------------------------- teacher bar
 function bindTeacherBar() {
   document.querySelectorAll("[data-add]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (state.me && state.me.role !== "teacher") return;
+      if (state.role !== "teacher") return;
       board.addBlockAndEdit(button.dataset.add);
     });
   });
@@ -305,7 +409,7 @@ function bindTeacherBar() {
   const imageButton = $("#add-image");
   if (imageButton) {
     imageButton.addEventListener("click", () => {
-      if (state.me && state.me.role !== "teacher") return;
+      if (state.role !== "teacher") return;
       openImagePicker();
     });
   }
@@ -313,7 +417,7 @@ function bindTeacherBar() {
   const followButton = $("#follow-btn");
   if (followButton) {
     followButton.addEventListener("click", () => {
-      if (state.me && state.me.role !== "teacher") return;
+      if (state.role !== "teacher") return;
       const next = !board.getFollow();
       board.setFollow(next);
       board.api.send({ type: "op", op: { type: "settings", follow: next } });
@@ -439,7 +543,7 @@ function lastBlockId() {
 }
 
 async function insertPastedText(text) {
-  if (state.me && state.me.role !== "teacher") {
+  if (state.role !== "teacher") {
     toast("Hanya pengajar yang dapat menempel teks ke papan.", "error");
     return;
   }
@@ -514,7 +618,6 @@ async function init() {
   bindTeacherBar();
   bindFileInput();
   bindBoardEvents();
-  setLoginHint("teacher");
 
   const dialog = $("#login-dialog");
   const logoutButton = $("#logout-btn");
@@ -529,11 +632,20 @@ async function init() {
 
   const me = await refreshMe();
   state.me = me;
-  if (me && me.role) {
-    state.role = me.role;
-    applyRoleUI(me.role);
-    socket.connect();
+  let room = null;
+  try {
+    room = localStorage.getItem("l6b_room");
+  } catch {
+    room = null;
+  }
+  const role = (me && me.role) || (room ? localStorage.getItem("l6b_role") : null);
+  if (role && room) {
+    state.role = role;
+    state.room = room;
+    applyRoleUI(role);
+    connectSocket();
   } else {
+    applyRoleUI(null);
     await openLogin();
   }
 }

@@ -27,15 +27,17 @@ def _signature(secret: str, body: str) -> str:
     return _b64encode(digest.digest())
 
 
-def issue_session(secret: str, role: str, ttl: int, *, now: float | None = None) -> str:
+def issue_session(
+    secret: str, role: str, ttl: int, *, name: str = "", now: float | None = None
+) -> str:
     if role not in ROLES:
         raise ValueError("role tidak dikenal")
     issued = int(now if now is not None else time.time())
+    payload = {"r": role, "iat": issued, "exp": issued + ttl}
+    if name:
+        payload["n"] = name[:30]
     body = _b64encode(
-        json.dumps(
-            {"r": role, "iat": issued, "exp": issued + ttl},
-            separators=(",", ":"),
-        ).encode("utf-8")
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
     )
     return f"{body}.{_signature(secret, body)}"
 

@@ -54,6 +54,16 @@ class Storage:
 
         await asyncio.to_thread(_init)
 
+    async def room_exists(self, name: str) -> bool:
+        def _exists() -> bool:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT 1 FROM rooms WHERE name = ?", (name,)
+                ).fetchone()
+                return row is not None
+
+        return await asyncio.to_thread(_exists)
+
     async def load_room(self, name: str) -> tuple[list[Block], dict]:
         def _load() -> tuple[list[Block], dict]:
             with self._connect() as conn:
